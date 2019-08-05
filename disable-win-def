@@ -1,0 +1,22 @@
+## Ansible Doc
+## Disables window defender in servers if 2012
+
+---
+- name: Check if Windows Defender is installed
+  win_stat:
+    path: C:\Program Files\Windows Defender
+  register: defender_info
+
+- name: Disable Windows Defender
+  win_firewall:
+    state: disabled
+    profiles:
+    - Domain
+  tags: disable_win_defender
+
+- name: Turn off Windows defender
+  win_feature:
+    name: Windows defender
+    state: absent
+
+...
