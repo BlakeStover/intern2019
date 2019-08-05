@@ -1,0 +1,52 @@
+## Ansible Doc
+## Creates a scheduled task in windows that checks for failures and sends an email alert if so 
+
+---
+- name: Copy PS script
+  win_copy:
+    src: /tmp/PS_Scripts/Scheduled_Task_Alert.ps1
+    dest: c:\directory\
+
+- name: Create task to run a PS script that checks for fails
+  win_scheduled_task:
+    name: BlakeTest
+    description: Run a PowerShell script
+    actions:
+    - path: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+      arguments: -ExecutionPolicy Unrestricted -NonInteractive -File C:\temp\task_alert.ps1
+    triggers:
+    - type: daily
+      start_boundary: '2019-07-03T09:00:00'
+    username: {{username}}
+    password: "{{ vault_stask_pass }}"
+    run_level: highest
+    state: present
+...
+
+## Powershell Script for task_alert.ps1
+
+$hst = "$env:COMPUTERNAME"
+$schdTskName = 'Test'
+#Sets up variables for finding failed tasks
+
+$FromAddress = 'TaskChecker@ticketmaster.com'
+$ToAddress = 'blake.stover@ticketmaster.com'
+$FailSubject = 'Scheduled Task Failure Notification'
+$SuccessSubject = 'Scheduled Task Sucess Notification'
+$msgbdyFail = "Scheduled task reporter has found that a scheduled task(s) from $hst has failed."
+$msgbdySuccess = "Scheduled task reporter has found these scheduled task(s) from ($schdTskName) $hst  that have succeeded."
+$SMTPServer = "$SMTPServer"
+#Sets up all of the variables for the email
+
+$TaskResult = Get-ScheduledTask -TaskName $target | Get-ScheduledTaskInfo
+if( $TaskResult.LastTaskResult -eq 0){
+    Write-Host "the task(s) succeeded"
+    send-mailmessage -from $FromAddress -to $ToAddress -subject $SuccessSubject -body $msgbdySuccess -priority High -smtpServer $SMTPServer -port '25'  
+    #Sends the email
+    
+}
+else{
+    write-host "the task(s) failed"
+    send-mailmessage -from $FromAddress -to $ToAddress -subject $FailSubject -body $msgbdyFail -priority High -smtpServer $SMTPServer -port '25' 
+    #Sends the email
+}
