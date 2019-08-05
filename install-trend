@@ -1,0 +1,26 @@
+## Ansible Doc
+## Installs Trend on remote machines
+
+---
+- name: download the Trend package
+  win_get_url:
+    url: http://----
+    dest: C:\Temp\CorpTrend_x64.msi
+    force: no
+
+- name: Install Trend Package
+  win_shell: |
+    $serviceName = 'tmlisten'
+    If (Get-Service $serviceName -ErrorAction SilentlyContinue) {
+      If ((Get-Service $serviceName).Status -eq 'Running') {
+        Write-Host "nothing to do"
+        } Else {
+        Write-Host "$serviceName found, but it is not running."
+        }
+    } Else {
+        Start-Process c:\temp\CorpTrend_x64.msi -ArgumentList '/quiet' -Wait
+        get-service -name tmlisten
+    }
+    Remove-Item c:\temp\CorpTrend_x64.msi
+
+...
