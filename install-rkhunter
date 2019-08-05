@@ -1,0 +1,51 @@
+## Ansible Doc
+## Installs rkhunter on linux machines
+
+---
+- name: Check if rkhunter is already installed
+  stat:
+    path: /usr/local/lib64/rkhunter
+  register: rkhunter
+  become: True
+  vars:
+    ansible_become_pass: "{{ ansibleiac_pass }}"
+
+- name: Copy rkhunter package
+  get_url:
+    url: "https://*server*/DeployFiles/rkhunter/{{ file1 }}"
+    validate_certs: false
+    dest: /tmp/
+    mode: 0755
+  when: rkhunter.stat.exists == false
+
+- name: Extract rkhunter files
+  unarchive:
+    src: "/tmp/{{ file1 }}"
+    dest: /tmp/
+    remote_src: yes
+    mode: 0755
+  become: True
+  when: rkhunter.stat.exists == false
+
+- name: Install rkhunter
+  command: /tmp/rkhunter/installer.sh --install
+  args:
+    chdir: /tmp/rkhunter/
+  when: rkhunter.stat.exists == false
+  become: True
+  vars:
+    ansible_become_pass: "{{ ansibleiac_pass }}"
+
+- name: Slack node notify
+  slack:
+    token: {{token_name}}
+    msg: '{{ inventory_hostname }} is installed with rkhunter'
+    channel: '#alerts'
+    color: good
+    username: ansible-server-build
+    icon_emoji: ":dragon:"
+    link_names: 0
+    parse: 'none'
+  delegate_to: localhost
+  no_log: True
+...
