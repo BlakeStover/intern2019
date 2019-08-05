@@ -1,0 +1,36 @@
+## Ansible Docs
+## Installs Laps from remote server / url 
+
+---
+- name: Check if Laps is installed
+  win_stat:
+    path: C:\Program Files\LAPS
+  register: laps_info
+
+- name: download laps package
+  win_get_url:
+    url: https://*server or url*/DeployFiles/LAPS/LAPS.x64.msi
+    dest: C:\Temp\LAPS.x64.msi
+    validate_certs: no
+    force: no
+  when: laps_info.stat.exists == false
+
+- name: Install LAPS
+  win_package:
+    path: C:\Temp\LAPS.x64.msi
+    product_id: '{{product_id}}'
+    state: present
+    creates_path: C:\Program Files\LAPS
+    arguments: /quiet
+    validate_certs: no
+  when: laps_info.stat.exists == false
+
+- name: GP Update
+  win_shell: |
+     gpupdate /force
+
+- name: Remove directory structure
+  win_file:
+    path: C:\Temp\LAPS.x64.msi
+    state: absent
+...
